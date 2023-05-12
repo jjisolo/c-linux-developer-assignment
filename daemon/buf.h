@@ -36,10 +36,10 @@ ip_vec_data iv_vec_safe_get(ip_vec_t* vec, size_t index);
 // Deallocate the memory that buffer occupies.
 void iv_vec_release(ip_vec_t* vec);
 
-// Perform binary search
-int iv_vec_find_dev(ip_vec_t* vec, unsigned int hash, int low, int high);
-
+// Binary search the string by its hash
 int iv_vec_find(ip_vec_t* vec, char* ip);
 
-// Perform Merge sort
+int iv_vec_find_dev(ip_vec_t* vec, unsigned int hash, int low, int high);
+
+// Perform Merge sort(by string hash)
 void iv_merge_sort(ip_vec_t* vec, int low, int high);

@@ -1,6 +1,24 @@
 #include "net.h"
+#include "buf.h"
 
-char* net_get_dest_ip(unsigned char *buffer, int size) {
+// Vector that holds data about the IP address and how
+// many times that IP occured at the sniffing stage.
+static ip_vec_t   ip_vector;
+static bool       do_sniffing;
+static pthread_t  sniffer_thread;
+static int        binded_sniffing_socket;
+
+void net_init() {
+    iv_vec_create(&ip_vector);
+}
+
+void net_release() {
+    close(binded_sniffing_socket);
+
+    iv_vec_release(&ip_vector);
+}
+
+char* net_get_dest_ip(unsigned char *buffer) {
   // Retrieve the IP header from this header.
   struct iphdr *ip_header = (struct iphdr *)buffer;
 
@@ -68,4 +86,61 @@ int net_create_sniffing_socket() {
     }
 
     return socket_sniff;
+}
+
+void net_bind_sniffer_socket(int socket) {
+    binded_sniffing_socket = socket;
+}
+
+void net_start_sniffing() {
+    do_sniffing = true;
+
+    pthread_create(&sniffer_thread, NULL, &net_sniff_ip_addresses, NULL);
+}
+
+void net_stop_sniffing() {
+    do_sniffing = false;
+
+    pthread_join(sniffer_thread, NULL);
+}
+
+void* net_sniff_ip_addresses(void * arg) {
+    unsigned char packet_buffer[2048];
+
+    // Setup datastructures for the recv function.
+    struct sockaddr socket_address;
+    int             recv_data_size;
+    socklen_t       socket_address_size = sizeof(socket_address);
+
+    char*  ip_address_dynamic;
+    char*  ip_address;
+    size_t ip_address_len;
+
+    while(do_sniffing) {
+        // Sniff the packets if the corresponding mode is ebabled.
+        recv_data_size = recvfrom(binded_sniffing_socket, packet_buffer, 2048, 0, &socket_address, &socket_address_size);
+        if(recv_data_size < 0) {
+          syslog(LOG_ERR, "Error: recvfrom() failed to get packets!");
+
+          return NULL;
+        }
+
+        // Get the destination IP form the packet header.
+        ip_address     = net_get_dest_ip(packet_buffer);
+        ip_address_len = strlen(ip_address);
+
+        if(ip_address_len >= 2) {
+            ip_address[strlen(ip_address)  ] = '\0';
+            ip_address[strlen(ip_address)-1] = '\0';
+        }
+
+        // Workaround to store the ip-address string in the vector.
+        ip_address_dynamic = (char *)malloc(ip_address_len+1);
+        strcpy(ip_address_dynamic, ip_address);
+
+        // Get the destination IP address from the recieved packet and store it in the vector.
+        iv_vec_push(&ip_vector, ip_address_dynamic);
+    }
+
+    return NULL;
 }

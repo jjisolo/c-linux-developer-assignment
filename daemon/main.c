@@ -8,6 +8,7 @@
 
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <pthread.h>
 
 #include "net.h"
 #include "cmd.h"
@@ -22,8 +23,7 @@
 #define TRUE  1
 #define FALSE 0
 
-static bool  socket_inet_do_sniffing  = false;
-static char* socket_inet_binded_iface = "enp3s0";
+static char*     socket_inet_binded_iface = "enp3s0";
 
 static void command_callback(int socket_client, int socket_sniff, command_t* command) {
     char message[NET_SERVER_MESSAGE_MAXLEN];
@@ -41,20 +41,23 @@ static void command_callback(int socket_client, int socket_sniff, command_t* com
           if(net_bind_socket_to_iface(socket_sniff, socket_inet_binded_iface) != 0) {
             snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "Error: unable to bind to the iface %s", socket_inet_binded_iface);
             write(socket_client, message, strlen(message));
-            return;
-        }
+          }
+          else {
+            // Enable sniffing.
+            net_start_sniffing();
 
-          // Enable sniffing.
-          socket_inet_do_sniffing = true;
-
-          snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "packets are being sniffed now from iface %s", socket_inet_binded_iface);
-          write(socket_client, message, strlen(message));
+            snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "packets are being sniffed now from iface %s", socket_inet_binded_iface);
+            write(socket_client, message, strlen(message));
+          }
         }
     }
     // `stop` command
     else if(strcmp(command->command, "stop") == 0) {
         // Stop the sniffing.
-        socket_inet_do_sniffing = false;
+        net_stop_sniffing();
+
+        snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "stopping the sniffing");
+        write(socket_client, message, strlen(message));
     }
 
     else if(strcmp(command->command, "select") == 0) {
@@ -135,18 +138,17 @@ static void create_daemon(void) {
 }
 
 int main(void) {
-  create_daemon();
+  //create_daemon();
+  net_init();
 
   // Allocate the space for the packets
-  unsigned char* packet_buffer = (unsigned char *) malloc(NET_PACKET_BUFFER_SIZE);
-           char* client_buffer = (char *)          malloc(NET_CLIENT_BUFFER_SIZE);
+  char* client_buffer = (char *)malloc(NET_CLIENT_BUFFER_SIZE);
 		   
   // Create the server socket
   int socket_server = net_initialize_server_socket();
   if(socket_server < 0) {
     syslog(LOG_EMERG, "Daemon terminated due to an error.");
 
-    free    (packet_buffer);
     free    (client_buffer);
     closelog();
 
@@ -162,7 +164,6 @@ int main(void) {
   if(socket_client < 0) {
     syslog(LOG_EMERG, "Daemon terminated due to an error.");
 
-    free    (packet_buffer);
 	free    (client_buffer);
     close   (socket_server);
 	closelog();
@@ -178,7 +179,6 @@ int main(void) {
   if(socket_sniff < 0) {
     syslog(LOG_EMERG, "Daemon terminated due to an error.");
 
-    free    (packet_buffer);
     free    (client_buffer);
     close   (socket_server);
     close   (socket_client);
@@ -188,13 +188,7 @@ int main(void) {
   }
 
   net_bind_socket_to_iface(socket_sniff, socket_inet_binded_iface);
-
-  // Setup datastructures for the recv function.
-  struct sockaddr socket_address;
-  int             recv_data_size;
-  socklen_t       socket_address_size;
-
-  socket_address_size = sizeof(socket_address);
+  net_bind_sniffer_socket(socket_sniff);
 
   // Display the welcome message to the user.
   cmd_display_welcome_message(socket_client);
@@ -202,7 +196,6 @@ int main(void) {
 
   while(true) {
     bzero(client_buffer, NET_CLIENT_BUFFER_SIZE);
-    bzero(packet_buffer, NET_PACKET_BUFFER_SIZE);
 
     // Recieve the data from the client.
     ssize_t bytes_recieved = read(socket_client, client_buffer, NET_CLIENT_BUFFER_SIZE-1);
@@ -222,43 +215,18 @@ int main(void) {
         client_buffer[bytes_recieved-1] = '\0';
     }
 
-    syslog(LOG_DEBUG, "buffer: %s", client_buffer);
-
     // Display the prompt in the client CLI, accept commands.
     command_t command = {};
     cmd_parse_command_message(client_buffer, &command);
-    command_callback  (socket_client, socket_sniff, &command);
-    cmd_display_prompt(socket_client);
-
-    // Sniff the packets if the corresponding mode is ebabled.
-    if(socket_inet_do_sniffing) {
-        recv_data_size = recvfrom(socket_sniff, packet_buffer, 65536, 0, &socket_address, &socket_address_size);
-
-        if(recv_data_size < 0) {
-          syslog(LOG_ERR,   "recvfrom failed to get packets!");
-          syslog(LOG_EMERG, "Daemon terminated due to an error.");
-
-          free    (packet_buffer);
-          free    (client_buffer);
-          close   (socket_server);
-          close   (socket_client);
-          close   (socket_sniff);
-          closelog();
-
-          return EXIT_FAILURE;
-        }
-    }
-
-	// Write the ouput for the client socket
-    //char *destinaton_ip = net_get_dest_ip(packet_buffer, recv_data_size);
+    command_callback         (socket_client, socket_sniff, &command);
+    cmd_display_prompt       (socket_client);
   }
 
   // Safely exit
-  free   (packet_buffer);
+  net_release();
   free   (client_buffer);
   close  (socket_server);
   close  (socket_client);
-  close  (socket_sniff);
   closelog();
 
   return EXIT_SUCCESS;

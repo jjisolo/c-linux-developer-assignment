@@ -102,6 +102,10 @@ ip_vec_data iv_vec_safe_get(ip_vec_t* vec, size_t index) {
 }
 
 void iv_vec_release(ip_vec_t* vec) {
+  for(size_t i = 0; i < vec->length; ++i) {
+      free(vec->_data[i].ip_address);
+  }
+
   free(vec->_data);
 }
 
