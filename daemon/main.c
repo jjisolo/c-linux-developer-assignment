@@ -23,7 +23,7 @@
 #define TRUE  1
 #define FALSE 0
 
-static char*     socket_inet_binded_iface = "enp3s0";
+static char* socket_inet_binded_iface = "enp3s0";
 
 static void command_callback(int socket_client, int socket_sniff, command_t* command) {
     char message[NET_SERVER_MESSAGE_MAXLEN];
