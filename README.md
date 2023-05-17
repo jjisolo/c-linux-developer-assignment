@@ -9,13 +9,13 @@ This program has some limitations, that i did not implemented. Im gonna list the
 size(2048 bytes), but they can still can be accessed from ```/var/lib/work-task/[iface]``` folder.
 
 This program declares various of modules, such as:
-* FileSystem(fs.h) aggregates the methods for working with filesystem.
-* Buffer(buf.h) the dynamic stretchy buffer that holds ip addresses(
+* ```FileSystem(fs.h)``` aggregates the methods for working with filesystem.
+* ```Buffer(buf.h)``` the dynamic stretchy buffer that holds ip addresses(
 merge sort->binary search backend, vector->cap*2 ammortized constant
 buffer grow).
-* Command(cmd.h) aggregates methods for parsing the input command from
+* ```Command(cmd.h)``` aggregates methods for parsing the input command from
 the client, and callback it with some server code.
-* Network(net.h) abstracting unix sockets methods.
+* ```Network(net.h)``` abstracting unix sockets methods.
 
 This program is memory save and tested using valgrind memory checher. 
 
