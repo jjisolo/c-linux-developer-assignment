@@ -1,8 +1,8 @@
 CC=gcc
 CCFLAGS=-Wall -Wextra
-CCFLAGS_DBG=-Wall -Wextra -g -ggdb
+CCFLAGS_DBG=-Wall -Wextra -g
 
-OBJ_DAEMON=daemon/main.c daemon/net.c daemon/cmd.c daemon/buf.c
+OBJ_DAEMON=daemon/main.c daemon/net.c daemon/cmd.c daemon/buf.c daemon/fs.c
 OUT_DAEMON=Daemon
 
 OBJ_CLIENT=client/main.c 

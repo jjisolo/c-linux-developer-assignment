@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <syslog.h>
 #include <stdio.h>
 #include <stdbool.h>
 
@@ -19,7 +20,7 @@ typedef struct {
 } ip_vec_t;
 
 // Allocate the space for the buffer.
-void iv_vec_create(ip_vec_t* vec);
+ip_vec_t* iv_vec_create(ip_vec_t* vec);
 
 // Grow the buffer data segment.
 void iv_vec_enhance(ip_vec_t* vec);

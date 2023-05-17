@@ -15,79 +15,11 @@
 
 #define UNX_LOGFILE_NAME "work-task"
 
-#define NET_SERVER_PORT 8838
+#define NET_SERVER_PORT           8838
 #define NET_SERVER_MESSAGE_MAXLEN 512
-#define NET_CLIENT_BUFFER_SIZE 512
-#define NET_PACKET_BUFFER_SIZE 2048
-
-#define TRUE  1
-#define FALSE 0
-
-static char* socket_inet_binded_iface = "enp3s0";
-
-static void command_callback(int socket_client, int socket_sniff, command_t* command) {
-    char message[NET_SERVER_MESSAGE_MAXLEN];
-
-    // `start` command
-    if(strcmp(command->command, "start") == 0) {
-        syslog(LOG_DEBUG, "%s %s", command->command, command->arg1);
-
-        // If there is more than one argument is provided.
-        if(command->arg2 || command->arg1) {
-            snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "Error: invalid argument(s). The correct usage of the command: > start");
-            write(socket_client, message, strlen(message));
-        }
-        else {
-          if(net_bind_socket_to_iface(socket_sniff, socket_inet_binded_iface) != 0) {
-            snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "Error: unable to bind to the iface %s", socket_inet_binded_iface);
-            write(socket_client, message, strlen(message));
-          }
-          else {
-            // Enable sniffing.
-            net_start_sniffing();
-
-            snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "packets are being sniffed now from iface %s", socket_inet_binded_iface);
-            write(socket_client, message, strlen(message));
-          }
-        }
-    }
-    // `stop` command
-    else if(strcmp(command->command, "stop") == 0) {
-        // Stop the sniffing.
-        net_stop_sniffing();
-
-        snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "stopping the sniffing");
-        write(socket_client, message, strlen(message));
-    }
-
-    else if(strcmp(command->command, "select") == 0) {
-
-        if(!command->arg1) {
-
-        }
-        else {
-
-            if(strcmp(command->arg1, "iface") == 0) {
-
-                if(command->arg2) {
-                    snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "iface %s is binded to the sniffer", command->arg2);
-                    write(socket_client, message, strlen(message));
-
-                    // Bind interface to the socket.
-                    socket_inet_binded_iface = command->arg2;
-                }
-                else {
-                    snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "Error: no iface is specified to the sniffer(consider typing `help` command)", command->arg2);
-                    write(socket_client, message, strlen(message));
-                }
-            }
-        }
-    }
-    else {
-        snprintf(message, NET_SERVER_MESSAGE_MAXLEN, "Error: invalid command\n");
-        write(socket_client, message, strlen(message));
-    }
-}
+#define NET_CLIENT_BUFFER_SIZE    512
+#define NET_PACKET_BUFFER_SIZE    2048
+#define NET_SOCKET_DEFAULT_IFACE  "eth0"
 
 static void create_daemon(void) {
   pid_t program_pid = fork();
@@ -149,8 +81,10 @@ int main(void) {
   if(socket_server < 0) {
     syslog(LOG_EMERG, "Daemon terminated due to an error.");
 
-    free    (client_buffer);
-    closelog();
+
+    free       (client_buffer);
+    closelog   ();
+    net_release();
 
     return EXIT_FAILURE;
   }
@@ -164,9 +98,10 @@ int main(void) {
   if(socket_client < 0) {
     syslog(LOG_EMERG, "Daemon terminated due to an error.");
 
-	free    (client_buffer);
-    close   (socket_server);
-	closelog();
+    free       (client_buffer);
+    close      (socket_server);
+    net_release();
+    closelog   ();
 
 	return EXIT_FAILURE;
   }
@@ -179,20 +114,20 @@ int main(void) {
   if(socket_sniff < 0) {
     syslog(LOG_EMERG, "Daemon terminated due to an error.");
 
-    free    (client_buffer);
-    close   (socket_server);
-    close   (socket_client);
-    closelog();
+    free       (client_buffer);
+    close      (socket_server);
+    close      (socket_client);
+    net_release();
+    closelog   ();
 
     return EXIT_FAILURE;
   }
 
-  net_bind_socket_to_iface(socket_sniff, socket_inet_binded_iface);
-  net_bind_sniffer_socket(socket_sniff);
+  net_bind_socket_to_iface(socket_sniff, NET_SOCKET_DEFAULT_IFACE);
+  net_bind_sniffer_socket (socket_sniff);
 
   // Display the welcome message to the user.
   cmd_display_welcome_message(socket_client);
-  cmd_display_prompt         (socket_client);
 
   while(true) {
     bzero(client_buffer, NET_CLIENT_BUFFER_SIZE);
@@ -218,16 +153,15 @@ int main(void) {
     // Display the prompt in the client CLI, accept commands.
     command_t command = {};
     cmd_parse_command_message(client_buffer, &command);
-    command_callback         (socket_client, socket_sniff, &command);
-    cmd_display_prompt       (socket_client);
+    cmd_command_callback     (socket_client, &socket_sniff, &command);
   }
 
   // Safely exit
+  free       (client_buffer);
+  close      (socket_server);
+  close      (socket_client);
   net_release();
-  free   (client_buffer);
-  close  (socket_server);
-  close  (socket_client);
-  closelog();
+  closelog   ();
 
   return EXIT_SUCCESS;
 }

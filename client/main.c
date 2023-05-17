@@ -14,7 +14,7 @@
 #include <stdbool.h>
 
 
-#define NET_SERVER_BUFFER_SIZE 256
+#define NET_SERVER_BUFFER_SIZE 2048
 #define NET_SERVER_PORT        8838
 
 int main(void) {
@@ -62,10 +62,25 @@ int main(void) {
             return EXIT_FAILURE;
         }
 
-        fprintf(stderr, "%s\n", buffer);
+        if(strcmp(buffer, "__recv_start") == 0) {
+            do {
+                ssize_t bytes_num = read(socket_desc, buffer, NET_SERVER_BUFFER_SIZE);
+                if(bytes_num < 0) {
+                    fprintf(stderr, "Error: failed to read from the server");
+                    free(buffer);
+
+                    return EXIT_FAILURE;
+                }
+
+                fprintf(stderr, "%s\n", buffer);
+            } while(strcmp(buffer, "__recv_end") != 0);
+        } else {
+            fprintf(stderr, "%s\n", buffer);
+        }
 
         // Send to server
         bzero(buffer, NET_SERVER_BUFFER_SIZE);
+		    fprintf(stderr, "(daemon-ctl) $ ");
         fgets(buffer, NET_SERVER_BUFFER_SIZE, stdin);
 
         bytes_num = write(socket_desc, buffer, strlen(buffer));

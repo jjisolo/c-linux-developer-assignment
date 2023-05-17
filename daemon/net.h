@@ -2,6 +2,7 @@
 #define __WORK_TASK_NET_H_INCLUDED__
 
 #include <string.h>	
+#include <stdlib.h>
 #include <netinet/ip_icmp.h>
 #include <netinet/udp.h>
 #include <netinet/tcp.h>
@@ -10,6 +11,9 @@
 #include <syslog.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <sys/socket.h>
+
+#include "fs.h"
 
 #define NET_SERVER_PORT 8838
 
@@ -38,6 +42,15 @@ int net_bind_socket_to_iface(int socket, char* iface);
 
 // Create socket with specific parameters.
 int net_initialize_server_socket();
+
+// Get the ip count on the current interface.
+long net_get_ip_count(char* ip_address);
+
+// Get the currently binded IP vector
+ip_vec_t net_get_binded_ip_vector();
+
+// Get currently binded interface
+char* net_get_binded_iface();
 
 // Accept the connection for ^this socket.
 int net_accept_connection(int socket_server);

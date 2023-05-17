@@ -40,11 +40,13 @@ static void iv_merge(ip_vec_t* vec, int low, int middle, int high) {
   }
 }
 
-void iv_vec_create(ip_vec_t* vec) {
+ip_vec_t* iv_vec_create(ip_vec_t* vec) {
   vec->capacity  = 2;
   vec->length    = 0;
   vec->_sorted   = false;
   vec->_data     = (ip_vec_data *)malloc(sizeof(ip_vec_data) * vec->capacity);
+
+  return vec;
 }
 
 void iv_vec_enhance(ip_vec_t* vec) {
@@ -54,6 +56,9 @@ void iv_vec_enhance(ip_vec_t* vec) {
   if(data) {
     vec->capacity = vec->capacity*2;
     vec->_data    = data;
+  }
+  else {
+    syslog(LOG_DEBUG, "Error: reallocation of an ip_vec failed.");
   }
 }
 
@@ -72,6 +77,10 @@ void iv_vec_push(ip_vec_t* vec, char* ip_address) {
       if(same_element_index != -1) {
           // Increment the ip counter.
           vec->_data[same_element_index].ip_address_num += 1;
+
+          // The element data is not used, so need to be released.
+          free(ip_address);
+
           return;
       }
   }
@@ -102,11 +111,16 @@ ip_vec_data iv_vec_safe_get(ip_vec_t* vec, size_t index) {
 }
 
 void iv_vec_release(ip_vec_t* vec) {
-  for(size_t i = 0; i < vec->length; ++i) {
-      free(vec->_data[i].ip_address);
-  }
+  if(!vec || !vec->_data)
+      return;
 
+  for(size_t i = 0; i < vec->length; ++i)
+    free(vec->_data[i].ip_address);
   free(vec->_data);
+
+  vec->capacity  = 2;
+  vec->length    = 0;
+  vec->_sorted   = false;
 }
 
 void iv_merge_sort(ip_vec_t* vec, int low, int high) {
