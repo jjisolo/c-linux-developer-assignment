@@ -17,6 +17,16 @@ Merge Sort+Binary Search backend, vector->capacity*2 ammortized constant buffer 
 the client, and callback it with some server code.
 * ```Network(net.h)``` abstracting unix sockets methods.
 
+This program include commands such as(means the commands that are running form CLI interface):
+* ```start``` -- packets are sniffed from binded iface(the default one is ```eth0```).
+* ```stop```  -- stop the packet sniffing.
+* ```show [ip] count``` show the count of IP entries from the binded iface.
+* ```select iface [iface]``` -- bind interface for sniffing.
+* ```stat [iface]```  -- show the collected statistics for the particular interface.
+* ```help```  -- display help message(i removed double dash because there is no concistency in
+commands if the double-dashes percisting).
+
+
 This program is memory save and tested using valgrind memory checker. Also
 it is thread safe, but i feel dumb when i say it, because it has only one
 thread with and like no mutexes.
