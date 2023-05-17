@@ -65,12 +65,12 @@ int net_bind_socket_to_iface(int socket, char* iface) {
         if(do_sniffing)
            net_stop_sniffing();
 
-        syslog(LOG_DEBUG, "Binding iface (%s => %s)", binded_iface, iface);
+        syslog(LOG_DEBUG, "Requested binding (%s => %s)", binded_iface, iface);
         if(setsockopt(socket, SOL_SOCKET, SO_BINDTODEVICE, iface, strlen(iface)) == 0) {
             syslog(LOG_DEBUG, "Dumping %s information..", binded_iface);
             fs_dump_ip_data(binded_iface, &ip_vector);
 
-            syslog(LOG_DEBUG, "Loading %s information...", iface);
+            syslog(LOG_DEBUG, "Loading %s inforation...", iface);
             fs_load_ip_data(iface,        &ip_vector);
 
             strcpy(binded_iface, iface);
@@ -139,7 +139,7 @@ int net_create_sniffing_socket() {
     int socket_sniff;
 
     if((socket_sniff = socket(AF_INET, SOCK_RAW, IPPROTO_TCP)) < 0) {
-      syslog(LOG_EMERG, "Error: unable to create sniffing socket!");
+      syslog(LOG_EMERG, "Error: unable to create sniffing socket! Are you root?");
       return -1;
     }
 

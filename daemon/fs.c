@@ -16,6 +16,7 @@ void fs_dump_ip_data(char* iface, ip_vec_t* ip_vector) {
     char* file_name    = fs_costruct_filename(iface);
     FILE* file_pointer = fopen(file_name, "w+");
 
+    // For each data struct in the vector, write it in the file.
     syslog(LOG_DEBUG, "Dumping ip data to the %s", file_name);
     for(size_t i = 0; i < ip_vector->length; ++i) {
         ip_vec_data vec_data = iv_vec_safe_get(ip_vector, i);
@@ -61,8 +62,6 @@ void fs_load_ip_data(char* iface, ip_vec_t* ip_vector) {
             // Read all file contents.
             if(getline(&line, &length, file_pointer) == -1)
               break;
-
-            fprintf(stderr, "line: %s", line);
 
             char* ip_address     = strtok(line, " ");
             char* ip_address_num = strtok(NULL, " ");

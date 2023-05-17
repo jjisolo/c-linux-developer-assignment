@@ -70,7 +70,7 @@ static void create_daemon(void) {
 }
 
 int main(void) {
-  //create_daemon();
+  create_daemon();
   net_init();
 
   // Allocate the space for the packets

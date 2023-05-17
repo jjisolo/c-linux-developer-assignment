@@ -8,6 +8,8 @@ This program has some limitations, that i did not implemented. Im gonna list the
 
 * Output of sniffed addresses to the client are limited to the ```NET_SERVER_MESSAGE_MAXLEN```
 size(2048 bytes), but they can still can be accessed from ```/var/lib/work-task/[iface]``` folder.
+* It should be run by under _root_ user. Beacuse of the sniff socket creation. It affects both
+client and server side.
 
 This program declares various of modules, such as:
 * ```FileSystem(fs.h)``` aggregates the methods for working with filesystem.
@@ -26,6 +28,7 @@ This program include commands such as(means the commands that are running form C
 * ```help```  -- display help message(i removed double dash because there is no concistency in
 commands if the double-dashes percisting).
 
+If the client failed to connect to the server, it will try to execv() the server executable.
 
 This program is memory save and tested using valgrind memory checker. Also
 it is thread safe, but i feel dumb when i say it, because it has only one
@@ -38,7 +41,7 @@ is executed:
 
 Client console(runned in separate TTY):
 
-```bash
+```
 issa@issa:~/Coding/work-test-task$ ./Client 
 
 
@@ -118,7 +121,7 @@ IP occurences count for 13.33.243.51: 61
 ```
 
 Server console(runninng as non-daemon, on separate TTY):
-```bash
+```
 ==8970== Memcheck, a memory error detector
 ==8970== Copyright (C) 2002-2022, and GNU GPL'd, by Julian Seward et al.
 ==8970== Using Valgrind-3.19.0 and LibVEX; rerun with -h for copyright info

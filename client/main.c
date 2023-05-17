@@ -44,10 +44,29 @@ int main(void) {
 
     if(connect(socket_desc, (struct sockaddr *)&server_address, sizeof(server_address)) < 0) {
         fprintf(stderr, "Error: failed to connect to the server\n");
-        free(buffer);
+			  fprintf(stderr, "It could be off, do you want it to start?[y/N]");
 
-        return EXIT_FAILURE;
-    }
+				char input[256];
+				scanf("%s", input);
+
+				if(strcmp(input, "y") == 0) {
+					pid_t pid = fork();
+				
+					if(pid == 0) {
+						fprintf(stderr, "Attempting to run the server\n");
+						execv("/bin/wt-daemon", NULL);
+					}
+					else {
+						 waitpid(pid, 0, 0);
+			       free(buffer);
+ 			       return EXIT_FAILURE;
+					}
+				} else {
+			       free(buffer);
+ 			       return EXIT_FAILURE;
+				}
+
+   }
 
 
     while(true) {

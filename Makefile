@@ -3,13 +3,12 @@ CCFLAGS=-Wall -Wextra
 CCFLAGS_DBG=-Wall -Wextra -g
 
 OBJ_DAEMON=daemon/main.c daemon/net.c daemon/cmd.c daemon/buf.c daemon/fs.c
-OUT_DAEMON=Daemon
+OUT_DAEMON=wt-daemon
 
 OBJ_CLIENT=client/main.c 
-OUT_CLIENT=Client
+OUT_CLIENT=wt-client
 
-OBJ_TESTS=daemon/tests/test.c daemon/buf.c
-OUT_TESTS=Test
+PREFIX=/usr/bin/
 
 daemon: 
 	$(CC) -o $(OUT_DAEMON) $(CCFLAGS) $(OBJ_DAEMON) 
@@ -20,9 +19,8 @@ daemon-debug:
 client: 
 	$(CC) -o $(OUT_CLIENT) $(CCFLAGS) $(OBJ_CLIENT) 
 
+install:
+	mv $(OUT_DAEMON) $(PREFIX) && mv $(OUT_CLIENT) $(PREFIX) 
 
-
-test: 
-	$(CC) -o $(OUT_TESTS) $(CCFLAGS_DBG) $(OBJ_TESTS) 
 
 .PHONY: daemon client

@@ -21,6 +21,14 @@
 #define server_arg2(string) \
     strcmp(command->arg2, string) == 0
 
+static const char* HELP_MESSAGE = "Packet sniffer\n"
+                                  "\nCLI commands list:\n"
+                                  "\tstart -- packets are sniffed from binded iface(the default one is eth0).\n"
+                                  "\tstop  -- stop the packet sniffing.\n"
+                                  "\tshow [ip] count show the count of IP entries from the binded iface.\n"
+                                  "\tselect iface [iface] -- bind interface for sniffing.\n"
+                                  "\thelp -- display this message.\n";
+
 static char* itoa(int val, int base) {
     static char buf[32] = {0};
     int i = 30;
@@ -141,7 +149,7 @@ void cmd_command_callback(int socket_client, int* socket_sniff, command_t* comma
                 server_print("Usage: show [ip] count");
             }
 
-            else if(!server_arg2("count")) {
+            else if(!(server_arg2("count"))) {
                 server_print("Error: invalid argument on position 3. Usage: show [ip] count");
             }
 
@@ -162,14 +170,14 @@ void cmd_command_callback(int socket_client, int* socket_sniff, command_t* comma
     else if(server_command("stat")) {
 
         // E.G. stat [iface] []
-        if(!command->arg2 && !command->arg1) {
+        if(!command->arg2) {
             // List all directories in the program folder.
             DIR *directory_handle = opendir(CMD_DAEMON_DIRECTORY);
 
             // Clear the buffer.
+            char buffer[256];
             memset(message, '\0', NET_SERVER_MESSAGE_MAXLEN*sizeof(char));
-
-
+            snprintf(buffer, 256, "%s:\n", "Cached ip data:");
 
             if(directory_handle) {
                 struct dirent *directory;
@@ -187,10 +195,11 @@ void cmd_command_callback(int socket_client, int* socket_sniff, command_t* comma
                     // stored in the memory
                     if(strcmp(directory->d_name, net_get_binded_iface()) != 0)
                         fs_load_ip_data(directory->d_name, &ip_vector);
+                    else
+                        continue;
 
                     // Prepare the message buffer
                     char buffer[256];
-                    memset(message, '\0', NET_SERVER_MESSAGE_MAXLEN*sizeof(char));
 
                     // Print the current directory name
                     snprintf(buffer, 256, "%s:\n", directory->d_name);
@@ -238,8 +247,11 @@ void cmd_command_callback(int socket_client, int* socket_sniff, command_t* comma
         }
     }
 
+    else if(server_command("help")) {
+        server_print(HELP_MESSAGE);
+    }
 
     else {
-        server_print("Error: invalid command\n");
+        server_print("Error: invalid command");
     }
 }
